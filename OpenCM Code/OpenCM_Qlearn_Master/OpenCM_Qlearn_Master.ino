@@ -34,10 +34,10 @@
 //define IDs for servos 
 #define SHOULDER    1
 #define ELBOW       2
-#define SHOULDER_OFFSET      400
+#define SHOULDER_OFFSET      400  
 #define ELBOW_OFFSET         300
-#define ENC_A       10
-#define ENC_B       12
+#define ENC_A       10              //brown encoder wire -- green female/female header
+#define ENC_B       12              //white encoder wire -- yellow female/female header
 #define POS_REWARD  10
 #define NEG_REWARD  -10
 #define POS_THRESHOLD 5

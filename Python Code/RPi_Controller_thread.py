@@ -30,6 +30,8 @@ R = np.random.random((ROW_NUM, COL_NUM, ACT_NUM))
 Q_Agent = Q_Agent_Class.Q_Agent_Class()
 crawlerDone = False
 
+
+#main Q algorithm
 def RunQ():
 	global Q_runFlag
 	global Q
@@ -58,6 +60,7 @@ def RunQ():
 			
 		print Q_Agent.reward	
 
+#timeout for sending and receiving commands over UART
 def cmdTimeout():
 	while(time.time() - startTime < 3):
 		if ser.inWaiting():
@@ -66,6 +69,7 @@ def cmdTimeout():
 			print 'Command Timeout'
 			break
 
+#hard-coded walking sequence
 def WorkingSequence():
 	ser.write("right")
 	ser.write('\n')            
@@ -107,6 +111,15 @@ def WorkingSequence():
 	startTime = time.time()
 	cmdTimout()
 
+def SingleMove(str RoboCmd)
+	print 'Sent:', RoboCmd
+	print 'Waiting on motors...'
+	ser.write(RoboCmd)
+	ser.write('\n')            
+	startTime = time.time()
+	cmdTimout()
+	
+#Main while loop
 while (not crawlerDone):
     if ser.inWaiting()>0:
         print ser.read(100)
@@ -114,39 +127,8 @@ while (not crawlerDone):
     else:
 		RoboCmd = raw_input('Enter Crawler Command>> ')
 			
-		if RoboCmd == 'up':
-			print 'Sent:', RoboCmd
-			print 'Waiting on motors...'
-			ser.write(RoboCmd)
-			ser.write('\n')            
-			startTime = time.time()
-			cmdTimout()
-						
-		elif RoboCmd == 'down':
-			print 'Sent:', RoboCmd
-			print 'Waiting on motors...'
-			ser.write(RoboCmd)
-			ser.write('\n')            
-			startTime = time.time()
-			cmdTimout()
-						
-		elif RoboCmd == 'left':
-			print 'Sent:', RoboCmd
-			print 'Waiting on motors...'
-			ser.write(RoboCmd)
-			ser.write('\n')            
-			startTime = time.time()
-			cmdTimout()
-					
-		elif RoboCmd == 'right':
-			print 'Sent:', RoboCmd
-			print 'Waiting on motors...'
-			ser.write(RoboCmd)
-			ser.write('\n')            
-			startTime = time.time()
-			cmdTimout()
 			
-		elif RoboCmd == 'Run Q':
+		if RoboCmd == 'Run Q':
 			if Q_runFlag == False:
 				Q_runFlag = True	
 				Qthread = threading.Thread(target = RunQ)
@@ -155,20 +137,9 @@ while (not crawlerDone):
 			else:
 				print 'Q is already running'
 		
-		elif RoboCmd == '-':
-			epsilon = epsilon - 0.1
-			print epsilon
-			
-		elif RoboCmd == '+':
-			epsilon = epsilon + 0.1
-			print epsilon
-			
 		elif RoboCmd == 'Pause':
 			Q_runFlag = False
 		
 		else:
-			ser.write(RoboCmd)
-			ser.write('\n')
-			print 'Sent:', RoboCmd
-			time.sleep(.02)   
+			SingleMove(RoboCmd)  
 			

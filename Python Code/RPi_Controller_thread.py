@@ -58,71 +58,54 @@ def RunQ():
 			
 		print Q_Agent.reward	
 
+def cmdTimeout():
+	while(time.time() - startTime < 3):
+		if ser.inWaiting():
+			break
+		if time.time() - startTime > 2:
+			print 'Command Timeout'
+			break
+
 def WorkingSequence():
 	ser.write("right")
 	ser.write('\n')            
 	startTime = time.time()
-	while(time.time() - startTime < 3):
-		if ser.inWaiting():
-			break
-		if time.time() - startTime > 2:
-			print 'Command Timeout'
+	cmdTimeout()
+	
 	ser.write("right")
 	ser.write('\n')            
 	startTime = time.time()
-	while(time.time() - startTime < 3):
-		if ser.inWaiting():
-			break
-		if time.time() - startTime > 2:
-			print 'Command Timeout'
+	cmdTimeout()
+	
 	ser.write("right")
 	ser.write('\n')            
 	startTime = time.time()
-	while(time.time() - startTime < 3):
-		if ser.inWaiting():
-			break
-		if time.time() - startTime > 2:
-			print 'Command Timeout'
+	cmdTimeout()
+	
 	ser.write("down")
 	ser.write('\n')            
 	startTime = time.time()
-	while(time.time() - startTime < 3):
-		if ser.inWaiting():
-			break
-		if time.time() - startTime > 2:
-			print 'Command Timeout'
+	cmdTimeout()
+	
 	ser.write("left")
 	ser.write('\n')            
 	startTime = time.time()
-	while(time.time() - startTime < 3):
-		if ser.inWaiting():
-			break
-		if time.time() - startTime > 2:
-			print 'Command Timeout'
+	cmdTimout()
+	
 	ser.write("left")
 	ser.write('\n')            
 	startTime = time.time()
-	while(time.time() - startTime < 3):
-		if ser.inWaiting():
-			break
-		if time.time() - startTime > 2:
-			print 'Command Timeout'
+	cmdTimout()
+	
 	ser.write("left")
 	ser.write('\n')            
 	startTime = time.time()
-	while(time.time() - startTime < 3):
-		if ser.inWaiting():
-			break
-		if time.time() - startTime > 2:
-			print 'Command Timeout'
+	cmdTimout()
+	
 	ser.write("up")	
 	ser.write('\n')            
 	startTime = time.time()
-	while(time.time() - startTime < 3):
-		if ser.inWaiting():
-			break
-		if time.time() - startTime > 2:
-			print 'Command Timeout'
+	cmdTimout()
 
 while (not crawlerDone):
     if ser.inWaiting()>0:
@@ -137,11 +120,7 @@ while (not crawlerDone):
 			ser.write(RoboCmd)
 			ser.write('\n')            
 			startTime = time.time()
-			while(time.time() - startTime < 3):
-				if ser.inWaiting():
-					break
-				if time.time() - startTime > 2:
-					print 'Command Timeout'
+			cmdTimout()
 						
 		elif RoboCmd == 'down':
 			print 'Sent:', RoboCmd
@@ -149,11 +128,7 @@ while (not crawlerDone):
 			ser.write(RoboCmd)
 			ser.write('\n')            
 			startTime = time.time()
-			while(time.time() - startTime < 3):
-				if ser.inWaiting():
-					break
-				if time.time() - startTime > 2:
-					print 'Command Timeout'
+			cmdTimout()
 						
 		elif RoboCmd == 'left':
 			print 'Sent:', RoboCmd
@@ -161,11 +136,7 @@ while (not crawlerDone):
 			ser.write(RoboCmd)
 			ser.write('\n')            
 			startTime = time.time()
-			while(time.time() - startTime < 3):
-				if ser.inWaiting():
-					break
-				if time.time() - startTime > 2:
-					print 'Command Timeout'
+			cmdTimout()
 					
 		elif RoboCmd == 'right':
 			print 'Sent:', RoboCmd
@@ -173,11 +144,7 @@ while (not crawlerDone):
 			ser.write(RoboCmd)
 			ser.write('\n')            
 			startTime = time.time()
-			while(time.time() - startTime < 3):
-				if ser.inWaiting():
-					break
-				if time.time() - startTime > 2:
-					print 'Command Timeout'
+			cmdTimout()
 			
 		elif RoboCmd == 'Run Q':
 			if Q_runFlag == False:
@@ -189,13 +156,12 @@ while (not crawlerDone):
 				print 'Q is already running'
 		
 		elif RoboCmd == '-':
-			epsilon == epsilon - 0.1
+			epsilon = epsilon - 0.1
 			print epsilon
-			time.sleep(1)
+			
 		elif RoboCmd == '+':
-			epsilon == epsilon + 0.1
+			epsilon = epsilon + 0.1
 			print epsilon
-			time.sleep(1)
 			
 		elif RoboCmd == 'Pause':
 			Q_runFlag = False

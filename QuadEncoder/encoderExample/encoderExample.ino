@@ -1,7 +1,7 @@
 #include <QuadEncoder.h>
 
-#define EncoderPinA 10
-#define EncoderPinB 12
+#define EncoderPinA 0
+#define EncoderPinB 1
 int Position = 0;
 
 QuadEncoder Enc0(EncoderPinA,EncoderPinB);

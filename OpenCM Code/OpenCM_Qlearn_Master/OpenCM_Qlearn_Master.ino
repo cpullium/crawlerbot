@@ -48,10 +48,15 @@
 //define IDs for servos 
 #define SHOULDER    1
 #define ELBOW       2
-#define ENC_A       13
-#define ENC_B       14
-#define POS_REWARD  1
-#define NEG_REWARD  -1
+#define SHOULDER_OFFSET      400
+#define ELBOW_OFFSET         300
+#define ENC_A       10
+#define ENC_B       12
+#define POS_REWARD  10
+#define NEG_REWARD  -10
+#define POS_THRESHOLD 2
+#define NEG_THRESHOLD -2
+
 
 //declare objects
 Dynamixel Dxl(1); 
@@ -65,7 +70,7 @@ char temp = 0;
 char incoming[100];
 int strIndex = 0;
 int position = 0;
-float Reward = 0;
+char* Reward = 0;
 
 void setup(){
     //initialize servo bus
@@ -78,6 +83,7 @@ void setup(){
     //initialize servos
     Dxl.jointMode(SHOULDER); //jointMode() is to use position mode
     Dxl.jointMode(ELBOW); //jointMode() is to use position mode
+    ZeroServos();
 }
 
 void loop()
@@ -99,33 +105,34 @@ void loop()
       if(strcmp(incoming,"up")==0){
 //          Serial3.print("OpenCM got: ");
 //          Serial3.println(incoming);
-          if((S[0]+1) <= 3){
-            S[0]=S[0]+1; 
-            Dxl.writeWord(SHOULDER, GOAL_POSITION, 100*(S[0]));
+          if((S[0]-1) >= 0){
+            S[0]=S[0]-1; 
+            position = Enc.pos();
+            Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET-100*(S[0]));
             while(Dxl.readByte(SHOULDER, MOVING));
-            Serial3.print("success");
+            if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
+            else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
+            else Reward = "nothing\n";
           }
           // Measure the Reward
-          if(position < Enc.pos()) Reward = POS_REWARD;
-          else if(position > Enc.pos()) Reward = NEG_REWARD;
-          position = Enc.pos();
-          Serial3.print("Reward: "); Serial3.print(Reward);
+          Serial3.print(Reward);
+          
           SerialUSB.print(S[0]); SerialUSB.println(S[1]);
       }
       else if(strcmp(incoming,"down")==0){
 //          Serial3.print("OpenCM got: ");
 //          Serial3.println(incoming);
-          if((S[0]-1) >= 0){
-            S[0]=S[0]-1; 
-            Dxl.writeWord(SHOULDER, GOAL_POSITION, 100*(S[0]));
+          if((S[0]-1) <= 3){
+            S[0]=S[0]+1; 
+            position = Enc.pos();
+            Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET-100*(S[0]));
             while(Dxl.readByte(SHOULDER, MOVING));
-            Serial3.print("success");
+            if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
+            else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
+            else Reward = "nothing\n";
           }
           // Measure the Reward
-          if(position < Enc.pos()) Reward = POS_REWARD;
-          else if(position > Enc.pos()) Reward = NEG_REWARD;
-          position = Enc.pos();
-          Serial3.print("Reward: "); Serial3.print(Reward);
+          Serial3.print(Reward);
           SerialUSB.print(S[0]); SerialUSB.println(S[1]);
       }
       else if(strcmp(incoming,"left")==0){
@@ -133,15 +140,15 @@ void loop()
 //          Serial3.println(incoming);
           if((S[1]-1) >= 0){
             S[1]=S[1]-1; 
-            Dxl.writeWord(ELBOW, GOAL_POSITION, 100*(S[1]));
+            position = Enc.pos();
+            Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET-100*(S[1]));
             while(Dxl.readByte(ELBOW, MOVING));
-            Serial3.print("success");
+            if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
+            else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
+            else Reward = "nothing\n";
           }
           // Measure the Reward
-          if(position < Enc.pos()) Reward = POS_REWARD;
-          else if(position > Enc.pos()) Reward = NEG_REWARD;
-          position = Enc.pos();
-          Serial3.print("Reward: "); Serial3.print(Reward);
+          Serial3.print(Reward);
           SerialUSB.print(S[0]); SerialUSB.println(S[1]);
       }
       else if(strcmp(incoming,"right")==0){
@@ -149,23 +156,20 @@ void loop()
 //          Serial3.println(incoming);
           if((S[1]+1) <= 3){
             S[1]=S[1]+1; 
-            Dxl.writeWord(ELBOW, GOAL_POSITION, 100*(S[1]));
+            position = Enc.pos();
+            Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET-100*(S[1]));
             while(Dxl.readByte(ELBOW, MOVING));
-            Serial3.print("success");
+            if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
+            else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
+            else Reward = "nothing\n";
           }
           // Measure the Reward
-          if(position < Enc.pos()) Reward = POS_REWARD;
-          else if(position > Enc.pos()) Reward = NEG_REWARD;
-          position = Enc.pos();
-          Serial3.print("Reward: "); Serial3.print(Reward);
+          Serial3.print(Reward);
           SerialUSB.print(S[0]); SerialUSB.println(S[1]);
       }
       else if(strcmp(incoming,"zero")==0){
-          Serial3.print("OpenCM got: ");
-          Serial3.println(incoming);
           ZeroServos();
           S={0,0};
-          Serial3.print("success");
           SerialUSB.print(S[0]); SerialUSB.println(S[1]);
       }
 //       else{
@@ -176,11 +180,13 @@ void loop()
        
 
     cmdFound = 0;
+    Serial3.flush();
    }
    
 }
 
 void ZeroServos(){
-    Dxl.writeWord(BROADCAST_ID, GOAL_POSITION, 0);           //set all servos to zero position
+    Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET);           //set all servos to zero position
+    Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET);           //set all servos to zero position
 }
 

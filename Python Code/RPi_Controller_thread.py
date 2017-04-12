@@ -6,6 +6,7 @@ import serial
 import time
 import Q_Agent_Class
 import threading
+from string import Template
 
 ser = serial.Serial('/dev/ttyAMA0',9600,timeout=0.2)
 Q_Agent = Q_Agent_Class.Q_Agent_Class()

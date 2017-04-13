@@ -112,13 +112,78 @@ def WorkingSequence():
 	startTime = time.time()
 	cmdTimout()
 
-def SingleMove(str RoboCmd)
+def SingleMove(RoboCmd):
 	print 'Sent:', RoboCmd
 	print 'Waiting on motors...'
 	ser.write(RoboCmd)
 	ser.write('\n')            
 	startTime = time.time()
 	cmdTimout()
+
+#Checks if a string can represent a float (used in parsing)
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        print "Value must be a number."
+        return False	
+
+#Used for changing the value of epsilon. exampleCmd: Eps = .25
+def checkForEpsilon(RoboCmd):
+    if(RoboCmd.find('Eps') > -1):
+        RoboCmd = RoboCmd.replace("Eps", "eps")
+    if(RoboCmd.find('epsilon') > -1):
+        RoboCmd = RoboCmd.replace("epsilon", "eps")
+    if(RoboCmd.find('eps =') > -1):
+        RoboCmd = RoboCmd.replace("eps =", "eps=")
+    StartIndex = RoboCmd.find('eps=')
+    if StartIndex != -1:
+        if is_number(RoboCmd[StartIndex+4:len(RoboCmd)]):
+            tempEps = float(RoboCmd[StartIndex+4:len(RoboCmd)])
+            if (tempEps >= 0 and tempEps <= 1):
+                epsilon = tempEps
+                print "Epsilon is now", epsilon
+            else:
+                print "Epsilon must be between 0 and 1"
+
+#Used for changing the value of alpha. exampleCmd: alpha = .25				
+def checkForAlpha(RoboCmd):
+    if(RoboCmd.find('Alpha') > -1):
+        RoboCmd = RoboCmd.replace("Alpha", "alpha")
+    if(RoboCmd.find('alpha =') > -1):
+        RoboCmd = RoboCmd.replace("alpha =", "alpha=")
+    StartIndex = RoboCmd.find('alpha=')
+    if StartIndex != -1:
+        if is_number(RoboCmd[StartIndex+6:len(RoboCmd)]):
+            temp = float(RoboCmd[StartIndex+6:len(RoboCmd)])
+            if (temp >= 0 and temp <= 1):
+                alpha = temp
+                print "Alpha is now", alpha
+            else:
+                print "Alpha must be between 0 and 1"				
+
+#Used for changing the value of gamma. exampleCmd: gamma = .25				
+def checkForGamma(RoboCmd):
+    if(RoboCmd.find('Gamma') > -1):
+        RoboCmd = RoboCmd.replace("Gamma", "gamma")
+    if(RoboCmd.find('gamma =') > -1):
+        RoboCmd = RoboCmd.replace("gamma =", "gamma=")
+    StartIndex = RoboCmd.find('gamma=')
+    if StartIndex != -1:
+        if is_number(RoboCmd[StartIndex+6:len(RoboCmd)]):
+            temp = float(RoboCmd[StartIndex+6:len(RoboCmd)])
+            if (temp >= 0 and temp <= 1):
+                gamma = temp
+                print "Gamma is now", gamma
+            else:
+                print "Gamma must be between 0 and 1"
+
+#Displays current parameter values				
+def showParams():
+    print "Epsilon =", epsilon
+    print "Alpha =", alpha
+    print "Gamma =", gamma
 	
 #Main while loop
 while (not crawlerDone):
@@ -126,10 +191,13 @@ while (not crawlerDone):
         print ser.read(100)
 		
     else:
-		RoboCmd = raw_input('Enter Crawler Command>> ')
+	    RoboCmd = raw_input('Enter Crawler Command>> ')
+		
+        checkForEpsilon(RoboCmd)
+        checkForAlpha(RoboCmd)
+        checkForGamma(RoboCmd)
 			
-			
-		if RoboCmd == 'Run Q':
+        if RoboCmd == 'Run Q':
 			if Q_runFlag == False:
 				Q_runFlag = True	
 				Qthread = threading.Thread(target = RunQ)
@@ -138,8 +206,11 @@ while (not crawlerDone):
 			else:
 				print 'Q is already running'
 		
-		elif RoboCmd == 'Pause':
+	    elif RoboCmd == 'Pause':
 			Q_runFlag = False
+		
+		elif RoboCmd == 'Show Params':
+			showParams()
 		
 		else:
 			SingleMove(RoboCmd)  

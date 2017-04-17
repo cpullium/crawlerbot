@@ -99,8 +99,8 @@ while (not crawlerDone):
 					if ser.read(100)=='success':
 						ser.flushInput()
 						q_flag = 1
-					# R=10
-				# Q_Agent.Q_Update(Q,alpha,gamma,R)
+					 R=10
+				 Q_Agent.Q_Update(Q,alpha,gamma,R)
 
 		else:
 			ser.write(RoboCmd)

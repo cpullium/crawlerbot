@@ -17,7 +17,21 @@
    Command(CMD) is sent from Pi to OpenCM. 
    Answer(ANS) sent from OpenCM to Raspberry Pi.
    |CMD|_________________________Description____________________________        |ANS|_________________________Description____________________________
-
+   |xC1| move one state up on the state map : move shoulder upward              |xA1| Done
+   |xC2| move one state down on the state map : move shoulder downward          |xA2| Action Success
+   |xC3| move one state right on the state map : move elbow upward              |xA3| Action Fail: Returned to same state
+   |xC4| move one state left on the state map : move elbow downward             |xA4| Action Fail: Servo Shutdown
+   |xC5| not yet defined                                                        |xA5| not yet defined
+   |xC6| not yet defined                                                        |xA6| not yet defined
+   |xC7| not yet defined                                                        |xA7| not yet defined
+   |xC8| not yet defined                                                        |xA8| not yet defined  
+   |xC9| not yet defined                                                        |xA9| not yet defined  
+   |xCA| not yet defined                                                        |xAA| Action Acknowledged  
+   |xCB| not yet defined                                                        |xAB| not yet defined  
+   |xCC| not yet defined                                                        |xAC| not yet defined  
+   |xCD| not yet defined                                                        |xAD| not yet defined  
+   |xCE| not yet defined                                                        |xAE| not yet defined  
+   |xCF| Request from pi to end transmission                                    |xAF| End Transmission Acknowledged
    
   References:
    Dynamixel SDK API Reference: http://support.robotis.com/en/software/dynamixel_sdk/api_reference.htm
@@ -34,14 +48,16 @@
 //define IDs for servos 
 #define SHOULDER    1
 #define ELBOW       2
-#define SHOULDER_OFFSET      400  
-#define ELBOW_OFFSET         300
-#define ENC_A       10              //brown encoder wire -- green female/female header
-#define ENC_B       12              //white encoder wire -- yellow female/female header
-#define POS_REWARD  10
-#define NEG_REWARD  -10
-#define POS_THRESHOLD 5
-#define NEG_THRESHOLD -5
+#define SHOULDER_OFFSET      500
+#define ELBOW_OFFSET         400
+//#define ENC_A       12                 //Uncomment to make it go toward leg
+//#define ENC_B       10
+#define ENC_A       10               //Uncomment to make it move towards wheels
+#define ENC_B       12
+#define POS_THRESHOLD 30
+#define NEG_THRESHOLD -30
+#define ROW_NUM        4
+#define COL_NUM        4
 
 
 //declare objects
@@ -56,15 +72,20 @@ char temp = 0;
 char incoming[100];
 int strIndex = 0;
 int position = 0;
+int SH_ROT_SCALE, ELB_ROT_SCALE;
 char* Reward = 0;
 
 void setup(){
     //initialize servo bus
     Dxl.begin(2);
+    
     //initialize all variables
     Serial3.begin(9600);//initialize serial to pi
+    
     //initialize serial to USB
     SerialUSB.begin();
+    SH_ROT_SCALE = SHOULDER_OFFSET/ROW_NUM;
+    ELB_ROT_SCALE = ELBOW_OFFSET/COL_NUM;
     
     //initialize servos
     Dxl.jointMode(SHOULDER); //jointMode() is to use position mode
@@ -94,7 +115,7 @@ void loop()
           if((S[0]-1) >= 0){
             S[0]=S[0]-1; 
             position = Enc.pos();
-            Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET-100*(S[0]));
+            Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET-SH_ROT_SCALE*(S[0]));
             while(Dxl.readByte(SHOULDER, MOVING));
             if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
             else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
@@ -108,10 +129,10 @@ void loop()
       else if(strcmp(incoming,"down")==0){
 //          Serial3.print("OpenCM got: ");
 //          Serial3.println(incoming);
-          if((S[0]-1) <= 3){
+          if((S[0]+1) < ROW_NUM){
             S[0]=S[0]+1; 
             position = Enc.pos();
-            Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET-100*(S[0]));
+            Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET-SH_ROT_SCALE*(S[0]));
             while(Dxl.readByte(SHOULDER, MOVING));
             if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
             else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
@@ -127,7 +148,7 @@ void loop()
           if((S[1]-1) >= 0){
             S[1]=S[1]-1; 
             position = Enc.pos();
-            Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET-100*(S[1]));
+            Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET-ELB_ROT_SCALE*(S[1]));
             while(Dxl.readByte(ELBOW, MOVING));
             if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
             else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
@@ -140,10 +161,10 @@ void loop()
       else if(strcmp(incoming,"right")==0){
 //          Serial3.print("OpenCM got: ");
 //          Serial3.println(incoming);
-          if((S[1]+1) <= 3){
+          if((S[1]+1) < COL_NUM){
             S[1]=S[1]+1; 
             position = Enc.pos();
-            Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET-100*(S[1]));
+            Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET-ELB_ROT_SCALE*(S[1]));
             while(Dxl.readByte(ELBOW, MOVING));
             if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
             else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
@@ -158,11 +179,11 @@ void loop()
           S={0,0};
           SerialUSB.print(S[0]); SerialUSB.println(S[1]);
       }
-//       else{
-//          Serial3.print("OpenCM got: ");
-//          Serial3.println(incoming);
-//          Serial3.println("That command does nothing");
-//       } 
+       else{
+          Serial3.print("OpenCM got: ");
+          Serial3.println(incoming);
+          Serial3.println("That command does nothing");
+       } 
        
 
     cmdFound = 0;

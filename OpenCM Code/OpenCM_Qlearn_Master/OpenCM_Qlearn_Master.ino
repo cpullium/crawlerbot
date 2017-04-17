@@ -17,21 +17,7 @@
    Command(CMD) is sent from Pi to OpenCM. 
    Answer(ANS) sent from OpenCM to Raspberry Pi.
    |CMD|_________________________Description____________________________        |ANS|_________________________Description____________________________
-   |xC1| move one state up on the state map : move shoulder upward              |xA1| Done
-   |xC2| move one state down on the state map : move shoulder downward          |xA2| Action Success
-   |xC3| move one state right on the state map : move elbow upward              |xA3| Action Fail: Returned to same state
-   |xC4| move one state left on the state map : move elbow downward             |xA4| Action Fail: Servo Shutdown
-   |xC5| not yet defined                                                        |xA5| not yet defined
-   |xC6| not yet defined                                                        |xA6| not yet defined
-   |xC7| not yet defined                                                        |xA7| not yet defined
-   |xC8| not yet defined                                                        |xA8| not yet defined  
-   |xC9| not yet defined                                                        |xA9| not yet defined  
-   |xCA| not yet defined                                                        |xAA| Action Acknowledged  
-   |xCB| not yet defined                                                        |xAB| not yet defined  
-   |xCC| not yet defined                                                        |xAC| not yet defined  
-   |xCD| not yet defined                                                        |xAD| not yet defined  
-   |xCE| not yet defined                                                        |xAE| not yet defined  
-   |xCF| Request from pi to end transmission                                    |xAF| End Transmission Acknowledged
+
    
   References:
    Dynamixel SDK API Reference: http://support.robotis.com/en/software/dynamixel_sdk/api_reference.htm

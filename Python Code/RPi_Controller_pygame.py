@@ -79,7 +79,7 @@ def RunQ():
 				else:
 					Q_Agent.reward = 0
 					print "Reward Error"	
-				R[Q_Agent.S0][Q_Agent.S1][Action]=Q_Agent.reward
+				R[Q_Agent.S0][Q_Agent.S1][Q_Agent.Next_Action]=Q_Agent.reward
 			
 			Q_Agent.Q_Update(Q, alpha, gamma)
 			
@@ -285,6 +285,7 @@ while (not crawlerDone):
 				
 		elif RoboCmd == 'gui on':
 			GUI_enabled = True
+			print 'GUI is enabled'
 			
 		elif RoboCmd == 'Pause':
 			Q_runFlag = False

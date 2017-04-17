@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-
+import pygame, sys
+from pygame.locals import *
 import numpy as np
 import serial
 import time
 import Q_Agent_Class
 import threading
-import pygame, sys
-from pygame.locals import *
-import numpy as np
-import Q_Agent_Class
- 
+
+ser = serial.Serial('/dev/ttyAMA0',9600,timeout=0.2)
+Q_Agent = Q_Agent_Class.Q_Agent_Class()
+
 # Define some colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -18,12 +18,9 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
-ser = serial.Serial('/dev/ttyAMA0',9600,timeout=0.2)
-Q_Agent = Q_Agent_Class.Q_Agent_Class()
-
 #hyperparameters
-alpha = 0.5
-gamma = 0.5
+alpha = 0.8
+gamma = 0.8
 epsilon = 0.9
 
 #Q table parameters
@@ -34,10 +31,11 @@ ACT_NUM = 4
 #runFlag for Q_Agent
 Q_runFlag = False
 Q_go = False
+GUI_enabled = False
 	
 # Create a 3 dimensional array using the parameters 
 Q = np.zeros((ROW_NUM, COL_NUM, ACT_NUM))
-R = np.random.random((ROW_NUM, COL_NUM, ACT_NUM))
+R = np.zeros((ROW_NUM, COL_NUM, ACT_NUM))
 
 Q_Agent = Q_Agent_Class.Q_Agent_Class()
 crawlerDone = False
@@ -47,6 +45,11 @@ crawlerDone = False
 def RunQ():
 	global Q_runFlag
 	global Q_go
+	global GUI_enabled
+	
+	global epsilon
+	global alpha
+	global gamma
 	
 	while Q_go:
 		if Q_runFlag:
@@ -59,37 +62,49 @@ def RunQ():
 				ser.write(Action)
 				ser.write("\n")
 				ser.flushInput()
-				
 				ser.flushOutput()
+				
 				while(ser.inWaiting() == 0):
 					continue
-				
+					
 				message = ser.readline()
-				print message
+				
+#				print message
 				if (message == "nothing\n") :
 					Q_Agent.reward = -1
 				elif (message == "positive\n"):
-					Q_Agent.reward = 10
+					Q_Agent.reward = 5
 				elif (message == "negative\n"):
-					Q_Agent.reward = -10
+					Q_Agent.reward = -5
 				else:
 					Q_Agent.reward = 0
-					print "Reward Error"
-					
-			print Q_Agent.reward
-			Q_Agent.Q_Update(Q, alpha, gamma)
-			print Q[0][0][0]
-			print Q[0][0][1]
-			print Q[0][0][2]
-			print Q[0][0][3]
+					print "Reward Error"	
+				R[Q_Agent.S0][Q_Agent.S1][Action]=Q_Agent.reward
 			
+			Q_Agent.Q_Update(Q, alpha, gamma)
+			
+			if GUI_enabled:
+				DrawQ()	
 		else:
 			continue
 	
+	# Be IDLE friendly. If you forget this line, the program will 'hang'
+	# on exit.
+	if GUI_enabled:
+		pygame.quit()
+
 def DrawQ():
-	while Q_go:
-		if Q_runFlag:
-			# Draw the Q
+	global GUI_enabled
+	global Q_go
+	global Q
+	global R
+	
+	if(GUI_enabled):
+		if(Q_go):
+			 # Set the screen background
+			screen.fill(BLACK)
+			WIDTH = (WINDOW_SIZE[0])/COL_NUM - 5
+			HEIGHT = (WINDOW_SIZE[1])/ROW_NUM - 20
 			for row in range(ROW_NUM):
 				for column in range(COL_NUM):               
 					temp = pygame.Rect((WIDTH * column + 5), (HEIGHT * row + 5),WIDTH,HEIGHT)
@@ -138,20 +153,13 @@ def DrawQ():
 					screen.blit(textsurface, right.center)
 			# Limit to 60 frames per second
 			clock.tick(60)
-		 
 			# Go ahead and update the screen with what we've drawn.
 			pygame.display.flip()
 		
-		else:
-			continue
-	# Be IDLE friendly. If you forget this line, the program will 'hang'
-	# on exit.
-	pygame.quit()
-
 #timeout for sending and receiving commands over UART
 def cmdTimeout():
 	startTime = time.time()
-	while(time.time() - startTime < 3):
+	while(time.time() - startTime < 2.1):
 		if ser.inWaiting():
 			break
 		if time.time() - startTime > 2:
@@ -192,53 +200,60 @@ def is_number(s):
 
 #Used for changing the value of epsilon. exampleCmd: Eps = .25
 def checkForEpsilon(RoboCmd):
-    if(RoboCmd.find('Eps') > -1):
-        RoboCmd = RoboCmd.replace("Eps", "eps")
-    if(RoboCmd.find('epsilon') > -1):
-        RoboCmd = RoboCmd.replace("epsilon", "eps")
-    if(RoboCmd.find('eps =') > -1):
-        RoboCmd = RoboCmd.replace("eps =", "eps=")
-    StartIndex = RoboCmd.find('eps=')
-    if StartIndex != -1:
-        if is_number(RoboCmd[StartIndex+4:len(RoboCmd)]):
-            tempEps = float(RoboCmd[StartIndex+4:len(RoboCmd)])
-            if (tempEps >= 0 and tempEps <= 1):
-                epsilon = tempEps
-                print "Epsilon is now", epsilon
-            else:
-                print "Epsilon must be between 0 and 1"
+	global epsilon
+	
+	if(RoboCmd.find('Eps') > -1):
+		RoboCmd = RoboCmd.replace("Eps", "eps")
+	if(RoboCmd.find('epsilon') > -1):
+		RoboCmd = RoboCmd.replace("epsilon", "eps")
+	if(RoboCmd.find('eps =') > -1):
+		RoboCmd = RoboCmd.replace("eps =", "eps=")
+		
+	StartIndex = RoboCmd.find('eps=')
+	if StartIndex != -1:
+		if is_number(RoboCmd[StartIndex+4:len(RoboCmd)]):
+			tempEps = float(RoboCmd[StartIndex+4:len(RoboCmd)])
+			if (tempEps >= 0 and tempEps <= 1):
+				epsilon = tempEps
+				print "Epsilon is now", epsilon
+			else:
+				print "Epsilon must be between 0 and 1"
 
 #Used for changing the value of alpha. exampleCmd: alpha = .25				
 def checkForAlpha(RoboCmd):
-    if(RoboCmd.find('Alpha') > -1):
-        RoboCmd = RoboCmd.replace("Alpha", "alpha")
-    if(RoboCmd.find('alpha =') > -1):
-        RoboCmd = RoboCmd.replace("alpha =", "alpha=")
-    StartIndex = RoboCmd.find('alpha=')
-    if StartIndex != -1:
-        if is_number(RoboCmd[StartIndex+6:len(RoboCmd)]):
-            temp = float(RoboCmd[StartIndex+6:len(RoboCmd)])
-            if (temp >= 0 and temp <= 1):
-                alpha = temp
-                print "Alpha is now", alpha
-            else:
-                print "Alpha must be between 0 and 1"				
+	global alpha
+	
+	if(RoboCmd.find('Alpha') > -1):
+		RoboCmd = RoboCmd.replace("Alpha", "alpha")
+	if(RoboCmd.find('alpha =') > -1):
+		RoboCmd = RoboCmd.replace("alpha =", "alpha=")
+	StartIndex = RoboCmd.find('alpha=')
+	if StartIndex != -1:
+		if is_number(RoboCmd[StartIndex+6:len(RoboCmd)]):
+			temp = float(RoboCmd[StartIndex+6:len(RoboCmd)])
+			if (temp >= 0 and temp <= 1):
+				alpha = temp
+				print "Alpha is now", alpha
+			else:
+				print "Alpha must be between 0 and 1"				
 
 #Used for changing the value of gamma. exampleCmd: gamma = .25				
 def checkForGamma(RoboCmd):
-    if(RoboCmd.find('Gamma') > -1):
-        RoboCmd = RoboCmd.replace("Gamma", "gamma")
-    if(RoboCmd.find('gamma =') > -1):
-        RoboCmd = RoboCmd.replace("gamma =", "gamma=")
-    StartIndex = RoboCmd.find('gamma=')
-    if StartIndex != -1:
-        if is_number(RoboCmd[StartIndex+6:len(RoboCmd)]):
-            temp = float(RoboCmd[StartIndex+6:len(RoboCmd)])
-            if (temp >= 0 and temp <= 1):
-                gamma = temp
-                print "Gamma is now", gamma
-            else:
-                print "Gamma must be between 0 and 1"
+	global gamma
+	
+	if(RoboCmd.find('Gamma') > -1):
+		RoboCmd = RoboCmd.replace("Gamma", "gamma")
+	if(RoboCmd.find('gamma =') > -1):
+		RoboCmd = RoboCmd.replace("gamma =", "gamma=")
+	StartIndex = RoboCmd.find('gamma=')
+	if StartIndex != -1:
+		if is_number(RoboCmd[StartIndex+6:len(RoboCmd)]):
+			temp = float(RoboCmd[StartIndex+6:len(RoboCmd)])
+			if (temp >= 0 and temp <= 1):
+				gamma = temp
+				print "Gamma is now", gamma
+			else:
+				print "Gamma must be between 0 and 1"
 
 #Displays current parameter values				
 def showParams():
@@ -246,7 +261,7 @@ def showParams():
     print "Alpha =", alpha
     print "Gamma =", gamma
 	
-#Main while loop
+	
 while (not crawlerDone):
     if ser.inWaiting()>0:
         print ser.read(100)
@@ -262,16 +277,14 @@ while (not crawlerDone):
 			if Q_runFlag == False:
 				Q_runFlag = True	
 				Q_go = True
-				
 				Qthread = threading.Thread(target = RunQ)
 				Qthread.start()
-				
-				Q_DrawThread = threading.Thread(target = DrawQ)
-				Q_DrawThread.start()
-				
 				print "type 'Pause' to stop running Q"
 			else:
 				print 'Q is already running'
+				
+		elif RoboCmd == 'gui on':
+			GUI_enabled = True
 			
 		elif RoboCmd == 'Pause':
 			Q_runFlag = False
@@ -285,8 +298,8 @@ while (not crawlerDone):
 		elif RoboCmd == 'Show Params':
 			showParams()
 			
-		elif RoboCmd == 'seq':
-			WorkingSequence()
+		elif RoboCmd == 'Show Q':
+			DrawQ()
 			
 		else:
 			SingleMove(RoboCmd)  

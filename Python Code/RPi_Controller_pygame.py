@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+###########################################################################################################IMPORTS
 import pygame, sys
 from pygame.locals import *
 import numpy as np
@@ -7,9 +7,23 @@ import serial
 import time
 import Q_Agent_Class
 import threading
+from math import ceil
 
+###########################################################################################################OBJECTS
 ser = serial.Serial('/dev/ttyAMA0',9600,timeout=0.2)
 Q_Agent = Q_Agent_Class.Q_Agent_Class()
+
+###########################################################################################################PYGAME SETUP
+# Initialize pygame
+pygame.init()
+pygame.font.init()
+basicfont = pygame.font.SysFont(None,18)
+
+# Set the WIDTH and HEIGHT of the screen
+WINDOW_SIZE = [600, 600]
+
+# Used to manage how fast the screen updates
+clock = pygame.time.Clock()
 
 # Define some colors
 BLACK = (0, 0, 0)
@@ -18,21 +32,30 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
+###########################################################################################################Q SETUP
 #hyperparameters
 alpha = 0.8
 gamma = 0.8
 epsilon = 0.9
 
 #Q table parameters
-ROW_NUM = 4
-COL_NUM = 4
+ROW_NUM = 3
+COL_NUM = 3
 ACT_NUM = 4 
 
 #runFlag for Q_Agent
 Q_runFlag = False
 Q_go = False
 GUI_enabled = False
-	
+
+#Reward Scheme
+Fuzzy = True
+Simple = False
+Raw = False 
+reward_threshold=10
+simple_pos_val=5
+simple_neg_val=-5
+
 # Create a 3 dimensional array using the parameters 
 Q = np.zeros((ROW_NUM, COL_NUM, ACT_NUM))
 R = np.zeros((ROW_NUM, COL_NUM, ACT_NUM))
@@ -41,21 +64,22 @@ Q_Agent = Q_Agent_Class.Q_Agent_Class()
 crawlerDone = False
 
 
-#main Q algorithm
+###########################################################################################################Q ALGORITHM
 def RunQ():
 	global Q_runFlag
 	global Q_go
 	global GUI_enabled
-	
 	global epsilon
 	global alpha
 	global gamma
-	
+	iteration=0
 	while Q_go:
 		if Q_runFlag:
-			
+		
+			print 'iteration: ',iteration
 			Q_Agent.Policy(epsilon, ACT_NUM, Q)
 			Action = Q_Agent.Take_Action(ROW_NUM, COL_NUM, ACT_NUM)
+			print 'Action:%s  from: %s%s   to: %s%s' %(Action, Q_Agent.S0, Q_Agent.S1, Q_Agent.S0_prime, Q_Agent.S1_prime) 
 			if Action == 'out of bounds':
 				print Action
 			else:
@@ -65,26 +89,18 @@ def RunQ():
 				ser.flushOutput()
 				
 				while(ser.inWaiting() == 0):
-					continue
-					
-				message = ser.readline()
-				
-#				print message
-				if (message == "nothing\n") :
-					Q_Agent.reward = -1
-				elif (message == "positive\n"):
-					Q_Agent.reward = 5
-				elif (message == "negative\n"):
-					Q_Agent.reward = -5
-				else:
-					Q_Agent.reward = 0
-					print "Reward Error"	
+					continue	
+				raw_reward = int(ser.readline())
+				print 'raw reward: ',raw_reward
+				Q_Agent.reward = parse_raw_reward(raw_reward)
 				R[Q_Agent.S0][Q_Agent.S1][Q_Agent.Next_Action]=Q_Agent.reward
-			
+				print 'Q reward: ', Q_Agent.reward
+				
 			Q_Agent.Q_Update(Q, alpha, gamma)
-			
+			iteration=iteration+1
 			if GUI_enabled:
-				DrawQ()	
+				DrawQ()
+#				time.sleep(3)
 		else:
 			continue
 	
@@ -92,12 +108,44 @@ def RunQ():
 	# on exit.
 	if GUI_enabled:
 		pygame.quit()
+		
+###########################################################################################################PARSE_RAW_REWARD		
+def parse_raw_reward(raw_reward):
+	global reward_threshold
+	
+	if Fuzzy:
+		return fuzzy_reward(raw_reward)
+	elif Simple:
+		return simple_reward(raw_reward)
+	elif Raw:
+		return raw_reward
+		
+###########################################################################################################FUZZY_REWARD	
+def fuzzy_reward(raw_reward):
+	global reward_threshold
+	if raw_reward > 0:
+		temp = raw_reward//reward_threshold
+	else:
+		temp = int(ceil(float(raw_reward)/float(reward_threshold)))
+	return temp
+	
+###########################################################################################################SIMPLE_REWARD		
+def simple_reward(raw_reward):
+	global reward_threshold
 
+	if(raw_reward)>reward_threshold:
+		return simple_pos_val
+	elif(raw_reward)<-reward_threshold:
+		return simple_neg_val	
+
+###########################################################################################################DRAW Q-MAP
 def DrawQ():
 	global GUI_enabled
 	global Q_go
 	global Q
 	global R
+	global screen 
+	COLOR_SCALE=10
 	
 	if(GUI_enabled):
 		if(Q_go):
@@ -112,39 +160,39 @@ def DrawQ():
 					#draw triangles for actions in each square
 					Q_temp=Q[row][column]
 					color = BLACK
-					if Q_temp[0] > 0: color = (0,Q_temp[0]*100,0)
-					elif Q_temp[0] < 0: color = (-Q_temp[0]*100,0,0)
+					if Q_temp[0] > 0: color = (0,Q_temp[0]*COLOR_SCALE,0)
+					elif Q_temp[0] < 0: color = (-Q_temp[0]*COLOR_SCALE,0,0)
 					up = pygame.draw.polygon(screen,color,[(temp.topleft),(temp.topright),(temp.center)])
 					color = BLACK            
-					if Q_temp[3] > 0: color = (0,Q_temp[3]*100,0)
-					elif Q_temp[3] < 0: color = (-Q_temp[3]*100,0,0)           
+					if Q_temp[3] > 0: color = (0,Q_temp[3]*COLOR_SCALE,0)
+					elif Q_temp[3] < 0: color = (-Q_temp[3]*COLOR_SCALE,0,0)           
 					right = pygame.draw.polygon(screen,color,[(temp.bottomright),(temp.topright),(temp.center)])
 					color = BLACK
-					if Q_temp[2] > 0: color = (0,Q_temp[2]*100,0)
-					elif Q_temp[2] < 0: color = (-Q_temp[2]*100,0,0)
+					if Q_temp[1] > 0: color = (0,Q_temp[1]*COLOR_SCALE,0)
+					elif Q_temp[1] < 0: color = (-Q_temp[1]*COLOR_SCALE,0,0)
 					down = pygame.draw.polygon(screen,color,[(temp.bottomleft),(temp.bottomright),(temp.center)])
 					color = BLACK 
-					if Q_temp[1] > 0: color = (0,Q_temp[1]*100,0)
-					elif Q_temp[1] < 0: color = (-Q_temp[1]*100,0,0)
-					left = pygame.draw.polygon(screen,color,[(temp.topleft),(temp.bottomleft),(temp.center)])            
+					if Q_temp[2] > 0: color = (0,Q_temp[2]*COLOR_SCALE,0)
+					elif Q_temp[2] < 0: color = (-Q_temp[2]*COLOR_SCALE,0,0)
+					left = pygame.draw.polygon(screen,color,[(temp.topleft),(temp.bottomleft),(temp.center)])         
 					
 					#draw white borders
 					borders_int = pygame.draw.lines(screen,WHITE,False, [(temp.topleft),(temp.bottomright),(temp.topright),(temp.bottomleft)],4)
 					borders_ext = pygame.draw.rect(screen, WHITE, (temp.left,temp.top,temp.width,temp.height),2)
 					
-					#place agent in square that was mode to
-					if (Q_Agent.S0_prime == row) and (Q_Agent.S1_prime == column):
+					#place agent in square that was moved to
+					if (Q_Agent.S0 == row) and (Q_Agent.S1 == column):
 						Agent = pygame.draw.circle(screen, BLUE, temp.center, 20)
 					
 					Qup_string = str(round(Q[row][column][0],3))
 					textsurface = basicfont.render(Qup_string, False, WHITE)
 					screen.blit(textsurface, up.center)
 					
-					Qleft_string = str(round(Q[row][column][1],3))
+					Qleft_string = str(round(Q[row][column][2],3))
 					textsurface = basicfont.render(Qleft_string, False, WHITE)
 					screen.blit(textsurface, left.center)
 					
-					Qdown_string = str(round(Q[row][column][2],3))
+					Qdown_string = str(round(Q[row][column][1],3))
 					textsurface = basicfont.render(Qdown_string, False, WHITE)
 					screen.blit(textsurface, down.center)
 					
@@ -155,8 +203,9 @@ def DrawQ():
 		clock.tick(60)
 		# Go ahead and update the screen with what we've drawn.
 		pygame.display.flip()
+
 		
-#timeout for sending and receiving commands over UART
+###########################################################################################################COMMAND TIMEOUT
 def cmdTimeout():
 	startTime = time.time()
 	while(time.time() - startTime < 2.1):
@@ -166,29 +215,51 @@ def cmdTimeout():
 			print 'Command Timeout'
 			break
 
-#hard-coded walking sequence
-def WorkingSequence():
-	SingleMove("right")
-	time.sleep(.25)
-	SingleMove("right")
-	time.sleep(.25)
-	SingleMove("down")
-	time.sleep(.25)
-	SingleMove("left")
-	time.sleep(.25)	
-	SingleMove("left")
-	time.sleep(.25)
-	SingleMove("up")
-	time.sleep(.25)
-
-		
+###########################################################################################################SINGLE MOVEMENT 
 def SingleMove(RoboCmd):
-	print 'Sent:', RoboCmd
-	print 'Waiting on motors...'
-	ser.write(RoboCmd)
-	ser.write('\n')            
-	cmdTimeout()
-
+	global GUI_enabled
+	global Q
+	global Q_Agent
+	global alpha, gamma, epsilon
+	Action = 0
+	
+	if(RoboCmd=='zero'):
+		#write servos to zero position(arm tucked in)
+		ser.write(RoboCmd)
+		ser.write('\n')            
+		cmdTimeout()
+	else:
+		if(RoboCmd=='up'):
+			Action=0
+		if(RoboCmd=='down'):
+			Action=1
+		if(RoboCmd=='left'):
+			Action=2
+		if(RoboCmd=='right'):
+			Action=3
+		Q_Agent.Next_Action = Action
+		RoboCmd = Q_Agent.Take_Action(ROW_NUM, COL_NUM, ACT_NUM)
+		if(RoboCmd == 'out of bounds'):
+			print RoboCmd
+		else:	
+			print 'Sent:', RoboCmd
+			print 'Waiting on motors...'
+			ser.write(RoboCmd)
+			ser.write('\n')            
+			cmdTimeout()
+			ser.flushOutput()
+			while(ser.inWaiting() == 0):
+				continue
+			raw_reward = int(ser.readline())
+			print 'raw reward: ',raw_reward
+			Q_Agent.reward = parse_raw_reward(raw_reward)
+			R[Q_Agent.S0][Q_Agent.S1][Q_Agent.Next_Action]=Q_Agent.reward
+			print 'Q reward', Q_Agent.reward
+		Q_Agent.Q_Update(Q, alpha, gamma)
+		if(GUI_enabled):
+			DrawQ()
+		
+###########################################################################################################IS_NUMBER
 #Checks if a string can represent a float (used in parsing)
 def is_number(s):
     try:
@@ -198,10 +269,10 @@ def is_number(s):
         print "Value must be a number."
         return False	
 
+###########################################################################################################CHECK FOR EPSILON
 #Used for changing the value of epsilon. exampleCmd: Eps = .25
 def checkForEpsilon(RoboCmd):
 	global epsilon
-	
 	if(RoboCmd.find('Eps') > -1):
 		RoboCmd = RoboCmd.replace("Eps", "eps")
 	if(RoboCmd.find('epsilon') > -1):
@@ -219,6 +290,7 @@ def checkForEpsilon(RoboCmd):
 			else:
 				print "Epsilon must be between 0 and 1"
 
+###########################################################################################################CHECK FOR ALPHA
 #Used for changing the value of alpha. exampleCmd: alpha = .25				
 def checkForAlpha(RoboCmd):
 	global alpha
@@ -237,6 +309,7 @@ def checkForAlpha(RoboCmd):
 			else:
 				print "Alpha must be between 0 and 1"				
 
+###########################################################################################################CHECK FOR GAMMA
 #Used for changing the value of gamma. exampleCmd: gamma = .25				
 def checkForGamma(RoboCmd):
 	global gamma
@@ -255,13 +328,14 @@ def checkForGamma(RoboCmd):
 			else:
 				print "Gamma must be between 0 and 1"
 
+###########################################################################################################SHOW PARAMETERS
 #Displays current parameter values				
 def showParams():
     print "Epsilon =", epsilon
     print "Alpha =", alpha
     print "Gamma =", gamma
 	
-	
+###########################################################################################################CONTROL LOOP
 while (not crawlerDone):
     if ser.inWaiting()>0:
         print ser.read(100)
@@ -285,6 +359,7 @@ while (not crawlerDone):
 				
 		elif RoboCmd == 'gui on':
 			GUI_enabled = True
+			screen = pygame.display.set_mode(WINDOW_SIZE)
 			print 'GUI is enabled'
 			
 		elif RoboCmd == 'Pause':
@@ -302,6 +377,19 @@ while (not crawlerDone):
 		elif RoboCmd == 'Show Q':
 			DrawQ()
 			
+		elif RoboCmd == 'Fuzzy Reward':
+			Fuzzy = True
+			Simple = False
+			Raw = False 
+		elif RoboCmd == 'Simple Reward':
+			Fuzzy = False
+			Simple = True
+			Raw = False
+		elif RoboCmd == 'Raw Reward':
+			Fuzzy = False
+			Simple = False
+			Raw = True
+
 		else:
 			SingleMove(RoboCmd)  
 			

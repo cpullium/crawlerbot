@@ -114,20 +114,20 @@ while not done:
             #draw triangles for actions in each square
             Q_temp=Q[row][column]
             color = BLACK
-            if Q_temp[0] > 0: color = (0,Q_temp[0]*100,0)
-            elif Q_temp[0] < 0: color = (-Q_temp[0]*100,0,0)
+            if Q_temp[0] > 0: color = (0,Q_temp[0]*COLOR_SCALE,0)
+            elif Q_temp[0] < 0: color = (-Q_temp[0]*COLOR_SCALE,0,0)
             up = pygame.draw.polygon(screen,color,[(temp.topleft),(temp.topright),(temp.center)])
             color = BLACK            
-            if Q_temp[3] > 0: color = (0,Q_temp[3]*100,0)
-            elif Q_temp[3] < 0: color = (-Q_temp[3]*100,0,0)           
+            if Q_temp[3] > 0: color = (0,Q_temp[3]*COLOR_SCALE,0)
+            elif Q_temp[3] < 0: color = (-Q_temp[3]*COLOR_SCALE,0,0)           
             right = pygame.draw.polygon(screen,color,[(temp.bottomright),(temp.topright),(temp.center)])
             color = BLACK
-            if Q_temp[2] > 0: color = (0,Q_temp[2]*100,0)
-            elif Q_temp[2] < 0: color = (-Q_temp[2]*100,0,0)
+            if Q_temp[2] > 0: color = (0,Q_temp[2]*COLOR_SCALE,0)
+            elif Q_temp[2] < 0: color = (-Q_temp[2]*COLOR_SCALE,0,0)
             down = pygame.draw.polygon(screen,color,[(temp.bottomleft),(temp.bottomright),(temp.center)])
             color = BLACK 
-            if Q_temp[1] > 0: color = (0,Q_temp[1]*100,0)
-            elif Q_temp[1] < 0: color = (-Q_temp[1]*100,0,0)
+            if Q_temp[1] > 0: color = (0,Q_temp[1]*COLOR_SCALE,0)
+            elif Q_temp[1] < 0: color = (-Q_temp[1]*COLOR_SCALE,0,0)
             left = pygame.draw.polygon(screen,color,[(temp.topleft),(temp.bottomleft),(temp.center)])            
             
             #draw white borders

@@ -34,12 +34,12 @@
 //define IDs for servos 
 #define SHOULDER    1
 #define ELBOW       2
-#define SHOULDER_OFFSET      500
-#define ELBOW_OFFSET         400
-//#define ENC_A       12                 //Uncomment to make it go toward leg
-//#define ENC_B       10
-#define ENC_A       10               //Uncomment to make it move towards wheels
-#define ENC_B       12
+#define SHOULDER_OFFSET      400
+#define ELBOW_OFFSET         300
+#define ENC_A       12                 //Uncomment to make it go toward leg
+#define ENC_B       10
+//#define ENC_A       10               //Uncomment to make it move towards wheels
+//#define ENC_B       12
 #define POS_THRESHOLD 30
 #define NEG_THRESHOLD -30
 #define ROW_NUM        4
@@ -59,7 +59,7 @@ char incoming[100];
 int strIndex = 0;
 int position = 0;
 int SH_ROT_SCALE, ELB_ROT_SCALE;
-char* Reward = 0;
+int Reward = 0;
 
 void setup(){
     //initialize servo bus
@@ -103,9 +103,7 @@ void loop()
             position = Enc.pos();
             Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET-SH_ROT_SCALE*(S[0]));
             while(Dxl.readByte(SHOULDER, MOVING));
-            if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
-            else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
-            else Reward = "nothing\n";
+            Reward = position - Enc.pos();
           }
           // Measure the Reward
           Serial3.print(Reward);
@@ -120,9 +118,7 @@ void loop()
             position = Enc.pos();
             Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET-SH_ROT_SCALE*(S[0]));
             while(Dxl.readByte(SHOULDER, MOVING));
-            if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
-            else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
-            else Reward = "nothing\n";
+            Reward = position - Enc.pos();
           }
           // Measure the Reward
           Serial3.print(Reward);
@@ -136,9 +132,7 @@ void loop()
             position = Enc.pos();
             Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET-ELB_ROT_SCALE*(S[1]));
             while(Dxl.readByte(ELBOW, MOVING));
-            if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
-            else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
-            else Reward = "nothing\n";
+            Reward = position - Enc.pos();
           }
           // Measure the Reward
           Serial3.print(Reward);
@@ -152,9 +146,7 @@ void loop()
             position = Enc.pos();
             Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET-ELB_ROT_SCALE*(S[1]));
             while(Dxl.readByte(ELBOW, MOVING));
-            if((Enc.pos() - position) > POS_THRESHOLD ) Reward = "positive\n";
-            else if((Enc.pos() - position) < NEG_THRESHOLD ) Reward = "negative\n";
-            else Reward = "nothing\n";
+            Reward = position - Enc.pos();
           }
           // Measure the Reward
           Serial3.print(Reward);
@@ -182,4 +174,5 @@ void ZeroServos(){
     Dxl.writeWord(SHOULDER, GOAL_POSITION, SHOULDER_OFFSET);           //set all servos to zero position
     Dxl.writeWord(ELBOW, GOAL_POSITION, ELBOW_OFFSET);           //set all servos to zero position
 }
+
 

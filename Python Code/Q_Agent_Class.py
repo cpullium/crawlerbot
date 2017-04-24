@@ -36,10 +36,10 @@ class Q_Agent_Class(object):
 			self.S1_prime = self.S1 + 1
 			command = 'right'
 		if self.S0_prime >= ROW_NUM or self.S0_prime < 0 or self.S1_prime >= COL_NUM or self.S1_prime < 0:
-			self.reward = -1
+			self.reward = -10
 			self.S0_prime = self.S0 
 			self.S1_prime = self.S1
-			command = 'out of bounds'
+			command='out of bounds'
 		return command  
         
 	def Q_Update(self, Q, alpha, gamma):
@@ -49,8 +49,9 @@ class Q_Agent_Class(object):
 		
 	def Policy(self, epsilon, ACT_NUM, Q):
 		test = round(np.random.random(), 2)
+		print test
 		if test > epsilon:
 			self.Next_Action = np.argmax(Q[self.S0][self.S1])
 		else:
-			self.Next_Action = np.random.randint(0,(ACT_NUM-1))
+			self.Next_Action = np.random.randint(0,(ACT_NUM))
 	# print self.Next_Action
